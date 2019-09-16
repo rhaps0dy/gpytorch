@@ -59,5 +59,5 @@ class CholeskyVariationalDistribution(VariationalDistribution):
         chol_variational_covar = chol_variational_covar.mul(lower_mask)
 
         # Now construct the actual matrix
-        variational_covar = CholLazyTensor(chol_variational_covar)
+        variational_covar = CholLazyTensor(chol_variational_covar).add_jitter(1e-6)
         return MultivariateNormal(self.variational_mean, variational_covar)

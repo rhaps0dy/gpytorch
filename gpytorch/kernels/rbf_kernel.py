@@ -2,10 +2,23 @@
 
 from .kernel import Kernel
 from ..functions import RBFCovariance
+import torch
 
 
 def postprocess_rbf(dist_mat):
+    dist_mat = rh(dist_mat, "dist_mat")
     return dist_mat.div_(-2).exp_()
+
+def rh(tensor, name):
+    return tensor
+    def f(grad):
+        print(f"Computing gradient for {name}")
+        if torch.isnan(grad).any():
+            print(f"Gradient is NaN for {name}!!")
+            import ipdb
+            ipdb.set_trace()
+    tensor.register_hook(f)
+    return tensor
 
 
 class RBFKernel(Kernel):
@@ -76,8 +89,12 @@ class RBFKernel(Kernel):
             or (self.ard_num_dims is not None and self.ard_num_dims > 1)
             or diag
         ):
-            x1_ = x1.div(self.lengthscale)
-            x2_ = x2.div(self.lengthscale)
+            # print(f"x1: {x1}; x2: {x2}, equals: {x1.equal(x2)}")
+            x1_ = rh(x1.div(self.lengthscale), "x1_")
+            if x1.equal(x2):
+                x2_ = x1_
+            else:
+                x2_ = rh(x2.div(self.lengthscale), "x2_")
             return self.covar_dist(x1_, x2_, square_dist=True, diag=diag,
                                    dist_postprocess_func=postprocess_rbf,
                                    postprocess=True, **params)

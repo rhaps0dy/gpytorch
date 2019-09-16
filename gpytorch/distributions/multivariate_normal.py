@@ -75,7 +75,7 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
                 the confidence region.
 
         """
-        std2 = self.stddev.mul_(2)
+        std2 = self.stddev.mul(2)
         mean = self.mean
         return mean.sub(std2), mean.add(std2)
 

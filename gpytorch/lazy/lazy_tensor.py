@@ -23,6 +23,18 @@ from ..utils.memoize import add_to_cache, cached
 from .lazy_tensor_representation_tree import LazyTensorRepresentationTree
 
 
+def rh(tensor, name):
+    def f(grad):
+        print(f"Computing gradient for {name}")
+        if torch.isnan(grad).any():
+            raise ValueError(f"Gradient is NaN for {name}!!")
+    if tensor.requires_grad:
+        tensor.register_hook(f)
+    if torch.isnan(tensor).any():
+        raise ValueError(f"Tensor {name} is NaN")
+    return tensor
+
+
 class LazyTensor(ABC):
     """
     Base class for LazyTensors in GPyTorch.
@@ -692,7 +704,8 @@ class LazyTensor(ABC):
 
         return AddedDiagLazyTensor(self, DiagLazyTensor(expanded_diag))
 
-    def add_jitter(self, jitter_val=1e-3):
+    def add_jitter(self, jitter_val=1e-6):
+        # TODO ask why this was 1e-3, which is enormous
         """
         Adds jitter (i.e., a small diagonal component) to the matrix this
         LazyTensor represents. This could potentially be implemented as a no-op,
@@ -1336,7 +1349,7 @@ class LazyTensor(ABC):
     @cached(name="root_inv_decomposition")
     def root_inv_decomposition(self, initial_vectors=None, test_vectors=None):
         """
-        Returns a (usually low-rank) root decomposotion lazy tensor of a PSD matrix.
+        Returns a (usually low-rank) root decomposition lazy tensor of a PSD matrix.
         This can be used for sampling from a Gaussian distribution, or for obtaining a
         low-rank version of a matrix
         """
@@ -1581,7 +1594,9 @@ class LazyTensor(ABC):
             :obj:`torch.tensor`:
                 Samples from MVN (num_samples x batch_size x num_dim) or (num_samples x num_dim)
         """
-        if self.size()[-2:] == torch.Size([1, 1]):
+        if hasattr(self, 'root'):
+            covar_root = self.root
+        elif self.size()[-2:] == torch.Size([1, 1]):
             covar_root = self.evaluate().sqrt()
         else:
             covar_root = self.root_decomposition().root
