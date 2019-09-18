@@ -82,7 +82,7 @@ class GaussianLikelihood(_GaussianLikelihoodBase):
         noise = self.noise_covar.noise
 
         res = ((target - mean) ** 2 + variance) / noise + noise.log() + math.log(2 * math.pi)
-        return res.mul(-0.5).sum(-1)
+        return res.sum(-1).mul(-0.5)
 
 
 class FixedNoiseGaussianLikelihood(_GaussianLikelihoodBase):

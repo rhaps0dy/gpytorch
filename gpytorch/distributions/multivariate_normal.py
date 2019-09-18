@@ -31,13 +31,18 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
         self._islazy = isinstance(mean, LazyTensor) or isinstance(covariance_matrix, LazyTensor)
         if self._islazy:
             if validate_args:
-                # TODO: add argument validation
-                raise NotImplementedError()
+                ms = mean.size(-1)
+                cs1 = covariance_matrix.size(-1)
+                cs2 = covariance_matrix.size(-2)
+                if not (ms == cs1 and ms == cs2):
+                    raise ValueError(f"Wrong shapes in {self._repr_sizes(mean, covariance_matrix)}")
+            batch_shape = _mul_broadcast_shape(mean.size()[:-1], covariance_matrix.size()[:-2])
+
             self.loc = mean
             self._covar = covariance_matrix
             self.__unbroadcasted_scale_tril = None
             self._validate_args = validate_args
-            batch_shape, event_shape = self.loc.shape[:-1], self.loc.shape[-1:]
+            event_shape = self.loc.shape[-1:]
             # TODO: Integrate argument validation for LazyTensors into torch.distribution validation logic
             super(TMultivariateNormal, self).__init__(batch_shape, event_shape, validate_args=False)
         else:
@@ -78,6 +83,13 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
         std2 = self.stddev.mul(2)
         mean = self.mean
         return mean.sub(std2), mean.add(std2)
+
+    @staticmethod
+    def _repr_sizes(mean, covariance_matrix):
+        return f"MultivariateNormal(loc: {mean.size()}, scale: {covariance_matrix.size()})"
+
+    def __repr__(self):
+        return self._repr_sizes(self.mean, self.lazy_covariance_matrix)
 
     @lazy_property
     def covariance_matrix(self):
