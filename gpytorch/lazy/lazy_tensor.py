@@ -1749,7 +1749,7 @@ class LazyTensor(ABC):
         return self.mul(other)
 
     def __radd__(self, other):
-        return self.mul(other)
+        return self + other
 
     def __rmul__(self, other):
         return self.mul(other)
