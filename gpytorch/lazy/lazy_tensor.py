@@ -1596,6 +1596,7 @@ class LazyTensor(ABC):
                 Samples from MVN (num_samples x batch_size x num_dim) or (num_samples x num_dim)
         """
         if hasattr(self, 'root'):
+            print("ABOUT TO GET THIS GUY'S ROOT THROUGH A CIRCUITOUS ROUTE")
             covar_root = self.root
         elif self.size()[-2:] == torch.Size([1, 1]):
             covar_root = self.evaluate().sqrt()
