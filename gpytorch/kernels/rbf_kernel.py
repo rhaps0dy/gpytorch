@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from .kernel import Kernel
 from ..functions import RBFCovariance
-import torch
+from .kernel import Kernel
 
 
 def postprocess_rbf(dist_mat):
@@ -79,29 +78,20 @@ class RBFKernel(Kernel):
         >>> covar = covar_module(x)  # Output: LazyTensor of size (2 x 10 x 10)
     """
 
-    def __init__(self, **kwargs):
-        super(RBFKernel, self).__init__(has_lengthscale=True, **kwargs)
+    has_lengthscale = True
 
     def forward(self, x1, x2, diag=False, **params):
-        if (
-            x1.requires_grad
-            or x2.requires_grad
-            or (self.ard_num_dims is not None and self.ard_num_dims > 1)
-            or diag
-        ):
-            # print(f"x1: {x1}; x2: {x2}, equals: {x1.equal(x2)}")
-            x1_ = rh(x1.div(self.lengthscale), "x1_")
-            if x1.equal(x2):
-                x2_ = x1_
-            else:
-                x2_ = rh(x2.div(self.lengthscale), "x2_")
-            return self.covar_dist(x1_, x2_, square_dist=True, diag=diag,
-                                   dist_postprocess_func=postprocess_rbf,
-                                   postprocess=True, **params)
-        return RBFCovariance().apply(x1, x2, self.lengthscale,
-                                     lambda x1, x2: self.covar_dist(x1, x2,
-                                                                    square_dist=True,
-                                                                    diag=False,
-                                                                    dist_postprocess_func=postprocess_rbf,
-                                                                    postprocess=False,
-                                                                    **params))
+        if x1.requires_grad or x2.requires_grad or (self.ard_num_dims is not None and self.ard_num_dims > 1) or diag:
+            x1_ = x1.div(self.lengthscale)
+            x2_ = x2.div(self.lengthscale)
+            return self.covar_dist(
+                x1_, x2_, square_dist=True, diag=diag, dist_postprocess_func=postprocess_rbf, postprocess=True, **params
+            )
+        return RBFCovariance().apply(
+            x1,
+            x2,
+            self.lengthscale,
+            lambda x1, x2: self.covar_dist(
+                x1, x2, square_dist=True, diag=False, dist_postprocess_func=postprocess_rbf, postprocess=False, **params
+            ),
+        )

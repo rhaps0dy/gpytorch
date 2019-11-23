@@ -8,23 +8,22 @@ from torch.distributions.kl import register_kl
 from torch.distributions.utils import _standard_normal, lazy_property
 
 from .. import settings
-from ..lazy import LazyTensor, lazify, delazify, DiagLazyTensor
-from .distribution import Distribution
+from ..lazy import LazyTensor, delazify, lazify, DiagLazyTensor
 from ..utils.broadcasting import _mul_broadcast_shape
+from .distribution import Distribution
 
 
-class _MultivariateNormalBase(TMultivariateNormal, Distribution):
+class MultivariateNormal(TMultivariateNormal, Distribution):
     """
-    Constructs a multivariate Normal random variable, based on mean and covariance
-    Can be multivariate, or a batch of multivariate Normals
+    Constructs a multivariate normal random variable, based on mean and covariance.
+    Can be multivariate, or a batch of multivariate normals
 
-    Passing a vector mean corresponds to a multivariate Normal
-    Passing a matrix mean corresponds to a batch of multivariate Normals
+    Passing a vector mean corresponds to a multivariate normal.
+    Passing a matrix mean corresponds to a batch of multivariate normals.
 
-    Args:
-        mean (Tensor): vector n or matrix b x n mean of MVN distribution
-        covar (Tensor): matrix n x n or batch matrix b x n x n covariance of
-            MVN distribution
+    :param torch.tensor mean: Vector n or matrix b x n mean of mvn distribution.
+    :param ~gpytorch.lazy.LazyTensor covar: Matrix n x n or batch matrix b x n x n covariance of
+        mvn distribution.
     """
 
     def __init__(self, mean, covariance_matrix, validate_args=False):
@@ -42,6 +41,7 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
             self._covar = covariance_matrix
             self.__unbroadcasted_scale_tril = None
             self._validate_args = validate_args
+            batch_shape = _mul_broadcast_shape(self.loc.shape[:-1], covariance_matrix.shape[:-2])
             event_shape = self.loc.shape[-1:]
             # TODO: Integrate argument validation for LazyTensors into torch.distribution validation logic
             super(TMultivariateNormal, self).__init__(batch_shape, event_shape, validate_args=False)
@@ -73,12 +73,11 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
         """
         Returns 2 standard deviations above and below the mean.
 
-        Returns:
-            Tuple[Tensor, Tensor]: pair of tensors of size (b x d) or (d), where
-                b is the batch size and d is the dimensionality of the random
-                variable. The first (second) Tensor is the lower (upper) end of
-                the confidence region.
-
+        :rtype: (torch.Tensor, torch.Tensor)
+        :return: pair of tensors of size (b x d) or (d), where
+            b is the batch size and d is the dimensionality of the random
+            variable. The first (second) Tensor is the lower (upper) end of
+            the confidence region.
         """
         std2 = self.stddev.mul(2)
         mean = self.mean
@@ -133,7 +132,8 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
                 padded_batch_shape = (*(1 for _ in range(diff.dim() + 1 - covar.dim())), *covar.batch_shape)
                 covar = covar.repeat(
                     *(diff_size // covar_size for diff_size, covar_size in zip(diff.shape[:-1], padded_batch_shape)),
-                    1, 1
+                    1,
+                    1,
                 )
 
         # Get log determininat and first part of quadratic form
@@ -198,7 +198,7 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
             return super().variance
 
     def __add__(self, other):
-        if isinstance(other, _MultivariateNormalBase):
+        if isinstance(other, MultivariateNormal):
             return self.__class__(
                 mean=self.mean + other.mean,
                 covariance_matrix=(self.lazy_covariance_matrix + other.lazy_covariance_matrix),
@@ -246,20 +246,6 @@ class _MultivariateNormalBase(TMultivariateNormal, Distribution):
             else:
                 new_cov = self.lazy_covariance_matrix[(*rest_idx, last_idx, slice(None, None, None))][..., last_idx]
         return self.__class__(mean=new_mean, covariance_matrix=new_cov)
-
-try:
-    # If pyro is installed, add the TorchDistributionMixin
-    from pyro.distributions.torch_distribution import TorchDistributionMixin
-
-    class MultivariateNormal(_MultivariateNormalBase, TorchDistributionMixin):
-        pass
-
-
-except ImportError:
-
-    class MultivariateNormal(_MultivariateNormalBase):
-        pass
-
 
 @register_kl(MultivariateNormal, MultivariateNormal)
 def kl_mvn_mvn(p_dist, q_dist):
