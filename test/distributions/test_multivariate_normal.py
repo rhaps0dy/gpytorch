@@ -269,7 +269,7 @@ class TestMultivariateNormal(BaseTestCase, unittest.TestCase):
 
     def test_getitem(self):
         shape = (2, 4, 3, 2)
-        cov = torch.randn(*shape, shape[1])
+        cov = torch.randn(*shape, shape[-1])
         cov = cov @ cov.transpose(-1, -2)
         mean = torch.randn(*shape)
         dist = MultivariateNormal(mean, cov)

@@ -181,6 +181,9 @@ class MultitaskMultivariateNormal(MultivariateNormal):
             value = value.view(new_shape).transpose(-1, -2).contiguous()
         return super().log_prob(value.view(*value.shape[:-2], -1))
 
+    def __getitem__(self, idx):
+        raise NotImplementedError
+
     @property
     def mean(self):
         mean = super().mean
