@@ -1660,8 +1660,18 @@ class LazyTensor(ABC):
 
         # Process the index
         index = index if isinstance(index, tuple) else (index,)
-        index = tuple(torch.tensor(idx) if isinstance(idx, list) else idx for idx in index)
-        index = tuple(idx.item() if torch.is_tensor(idx) and not len(idx.shape) else idx for idx in index)
+        unsqueeze_locs = []
+        index_ = []
+        for loc, idx in enumerate(index):
+            if idx is None:
+                unsqueeze_locs.append(loc)
+            else:
+                if isinstance(idx, list):
+                    idx = torch.tensor(idx)
+                if torch.is_tensor(idx) and len(idx.shape) == 0:
+                    idx = idx.item()
+                index_.append(idx)
+        index = tuple(index_)
 
         # Handle the ellipsis
         # Find the index of the ellipsis
@@ -1734,6 +1744,10 @@ class LazyTensor(ABC):
                     "{}.__getitem__ failed! Expected a final shape of size {}, got {}. This is a bug with GPyTorch, "
                     "or your custom LazyTensor.".format(self.__class__.__name__, expected_shape, res.shape)
                 )
+
+        # unsqueeze the dimensions that were "None" at the beginning
+        for i in unsqueeze_locs:
+            res = res.unsqueeze(i)
 
         # We're done!
         return res
