@@ -19,9 +19,7 @@ from .functions import (  # Deprecated
     dsmm,
     inv_matmul,
     inv_quad,
-    inv_quad_log_det,
     inv_quad_logdet,
-    log_det,
     log_normal_cdf,
     logdet,
     matmul,
@@ -32,7 +30,7 @@ from .lazy import cat, delazify, lazify
 from .mlls import ExactMarginalLogLikelihood
 from .module import Module
 
-__version__ = "0.3.6"
+__version__ = "1.0.1"
 
 __all__ = [
     # Submodules
@@ -69,7 +67,4 @@ __all__ = [
     "settings",
     # Other
     "__version__",
-    # Deprecated
-    "inv_quad_log_det",
-    "log_det",
 ]
