@@ -1660,22 +1660,31 @@ class LazyTensor(ABC):
 
         # Process the index
         index = index if isinstance(index, tuple) else (index,)
-        unsqueeze_locs = []
+        unsqueeze_front = []
+        unsqueeze_back = []
         index_ = []
+        ellipsis_locs = []
         for loc, idx in enumerate(index):
             if idx is None:
-                unsqueeze_locs.append(loc)
+                # Remove `None`s from the index
+                if len(ellipsis_locs) == 0:
+                    unsqueeze_front.append(loc)
+                else:
+                    unsqueeze_back.append(-(len(index) - loc))
             else:
-                if isinstance(idx, list):
+                if idx is Ellipsis:
+                    # Find the index of the ellipsis
+                    ellipsis_locs.append(loc)
+                elif isinstance(idx, list):
+                    # Lists become tensors
                     idx = torch.tensor(idx)
-                if torch.is_tensor(idx) and len(idx.shape) == 0:
+                elif torch.is_tensor(idx) and idx.dim() == 0:
+                    # Scalar tensors become ints
                     idx = idx.item()
                 index_.append(idx)
         index = tuple(index_)
 
         # Handle the ellipsis
-        # Find the index of the ellipsis
-        ellipsis_locs = tuple(index for index, item in enumerate(index) if item is Ellipsis)
         if settings.debug.on():
             if len(ellipsis_locs) > 1:
                 raise RuntimeError(
@@ -1746,7 +1755,9 @@ class LazyTensor(ABC):
                 )
 
         # unsqueeze the dimensions that were "None" at the beginning
-        for i in unsqueeze_locs:
+        for i in unsqueeze_front:
+            res = res.unsqueeze(i)
+        for i in unsqueeze_back[::-1]:
             res = res.unsqueeze(i)
 
         # We're done!

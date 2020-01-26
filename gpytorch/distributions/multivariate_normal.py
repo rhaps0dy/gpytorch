@@ -225,21 +225,28 @@ class MultivariateNormal(TMultivariateNormal, Distribution):
         last_idx = idx[-1]
         new_mean = self.mean[idx]
 
-        if len(idx) <= self.mean.dim() - 1 and (Ellipsis not in rest_idx):
-            new_cov = self.lazy_covariance_matrix[idx]
-        elif len(idx) > self.mean.dim():
-            raise IndexError(f"Index {idx} has too many dimensions")
-        else:
+        if idx[0] is not Ellipsis and self.mean.dim() != self.lazy_covariance_matrix.dim()-1:
+            raise NotImplementedError(
+                f"Cannot handle case where indices count from the front, and "
+                f"mean (dim={self.mean.dim()}) and cov (dim={self.lazy_covariance_matrix.dim()-1}+1) "
+                f"have different number of dimensions.")
+
+        effective_len_idx = len(idx) - idx.count(None)
+        if Ellipsis in rest_idx or effective_len_idx == self.mean.dim():
             # In this case we know last_idx corresponds to the last dimension
             # of mean and the last two dimensions of lazy_covariance_matrix
-            if isinstance(last_idx, int):
+            if last_idx is None or isinstance(last_idx, int):
                 new_cov = DiagLazyTensor(self.lazy_covariance_matrix.diag()[(*rest_idx, last_idx)])
             elif isinstance(last_idx, slice):
                 new_cov = self.lazy_covariance_matrix[(*rest_idx, last_idx, last_idx)]
-            elif last_idx is (...):
+            elif last_idx is Ellipsis:
                 new_cov = self.lazy_covariance_matrix[rest_idx]
             else:
                 new_cov = self.lazy_covariance_matrix[(*rest_idx, last_idx, slice(None, None, None))][..., last_idx]
+        elif effective_len_idx <= self.mean.dim() - 1:
+            new_cov = self.lazy_covariance_matrix[idx]
+        else:  # effective_len_idx > self.mean.dim():
+            raise IndexError(f"Index {idx} has too many dimensions")
         return self.__class__(mean=new_mean, covariance_matrix=new_cov)
 
 
