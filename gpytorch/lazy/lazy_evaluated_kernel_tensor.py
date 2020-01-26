@@ -95,7 +95,7 @@ class LazyEvaluatedKernelTensor(LazyTensor):
                 if any(not isinstance(bi, slice) for bi in batch_indices):
                     raise RuntimeError(
                         f"Attempting to tensor index a non-batch matrix's batch dimensions. "
-                        "Got batch index {batch_indices} but my shape was {self.shape}"
+                        f"Got batch index {batch_indices} but my shape was {self.shape}"
                     )
                 x1 = x1.expand(*([1] * len(batch_indices)), *self.x1.shape[-2:])
                 x1 = x1[(*batch_indices, row_index, dim_index)]
