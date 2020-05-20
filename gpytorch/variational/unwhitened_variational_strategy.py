@@ -98,7 +98,7 @@ class UnwhitenedVariationalStrategy(_VariationalStrategy):
             predictive_mean = torch.add(
                 test_mean, induc_data_covar.transpose(-2, -1).matmul(self._mean_cache).squeeze(-1)
             )
-            predictive_covar = ZeroLazyTensor(test_mean.size(-1), test_mean.size(-1))
+            predictive_covar = ZeroLazyTensor(*predictive_mean.size(), predictive_mean.size(-1))
             return MultivariateNormal(predictive_mean, predictive_covar)
 
         # Expand everything to the right size

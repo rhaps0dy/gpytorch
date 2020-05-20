@@ -111,8 +111,9 @@ class WhitenedVariationalStrategy(UnwhitenedVariationalStrategy):
 
             # Cache some values for the KL divergence
             if self.training:
+                mean_diff = (variational_dist.mean - self.prior_distribution.mean).unsqueeze(-1)
                 self._mean_diff_inv_quad_memo, self._logdet_memo = prior_covar.inv_quad_logdet(
-                    (variational_dist.mean - self.prior_distribution.mean), logdet=True
+                    mean_diff, logdet=True
                 )
 
             return MultivariateNormal(variational_dist.mean, predictive_covar)
