@@ -48,7 +48,7 @@ class SoftmaxLikelihood(Likelihood):
             raise RuntimeError("There should be %d features" % self.num_features)
 
         if self.mixing_weights is not None:
-            mixed_fs = function_samples @ self.mixing_weights.t()  # num_classes x num_data
+            mixed_fs = function_samples @ self.mixing_weights.t()  # num_data x num_classes
         else:
             mixed_fs = function_samples
         res = base_distributions.Categorical(logits=mixed_fs)
