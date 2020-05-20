@@ -197,3 +197,7 @@ class LessThan(Interval):
 
     def __repr__(self):
         return self._get_name() + f"({self.upper_bound:.3E})"
+
+
+class ConstraintViolationError(RuntimeError):
+    pass
