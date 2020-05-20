@@ -4,6 +4,7 @@ import torch
 
 from ..utils.toeplitz import sym_toeplitz_derivative_quadratic_form, sym_toeplitz_matmul
 from .lazy_tensor import LazyTensor
+from .. import settings
 
 
 class ToeplitzLazyTensor(LazyTensor):
@@ -52,7 +53,9 @@ class ToeplitzLazyTensor(LazyTensor):
     def _transpose_nonbatch(self):
         return ToeplitzLazyTensor(self.column)
 
-    def add_jitter(self, jitter_val=1e-3):
+    def add_jitter(self, jitter_val=None):
+        if jitter_val is None:
+            jitter_val = settings.diagonal_jitter.value()
         jitter = torch.zeros_like(self.column)
         jitter.narrow(-1, 0, 1).fill_(jitter_val)
         return ToeplitzLazyTensor(self.column.add(jitter))

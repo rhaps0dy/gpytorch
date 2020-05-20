@@ -223,7 +223,9 @@ class BatchRepeatLazyTensor(LazyTensor):
             base_lazy_tensor = base_lazy_tensor._unsqueeze_batch(base_unsqueeze_dim)
         return self.__class__(base_lazy_tensor, batch_repeat=batch_repeat)
 
-    def add_jitter(self, jitter_val=1e-3):
+    def add_jitter(self, jitter_val=None):
+        if jitter_val is None:
+            jitter_val = settings.diagonal_jitter.value()
         return self.__class__(self.base_lazy_tensor.add_jitter(jitter_val=jitter_val), batch_repeat=self.batch_repeat)
 
     def inv_quad_logdet(self, inv_quad_rhs=None, logdet=False, reduce_inv_quad=True):

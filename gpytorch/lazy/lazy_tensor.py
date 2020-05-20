@@ -21,6 +21,7 @@ from ..utils.getitem import _compute_getitem_size, _convert_indices_to_tensors, 
 from ..utils.memoize import add_to_cache, cached
 from ..utils.warnings import NumericalWarning
 from .lazy_tensor_representation_tree import LazyTensorRepresentationTree
+from .. import settings
 
 
 class LazyTensor(ABC):
@@ -702,13 +703,15 @@ class LazyTensor(ABC):
 
         return AddedDiagLazyTensor(self, DiagLazyTensor(expanded_diag))
 
-    def add_jitter(self, jitter_val=1e-3):
+    def add_jitter(self, jitter_val=None):
         """
         Adds jitter (i.e., a small diagonal component) to the matrix this
         LazyTensor represents. This could potentially be implemented as a no-op,
         however this could lead to numerical instabilities, so this should only
         be done at the user's risk.
         """
+        if jitter_val is None:
+            jitter_val = settings.diagonal_jitter.value()
         diag = torch.tensor(jitter_val, dtype=self.dtype, device=self.device)
         return self.add_diag(diag)
 
