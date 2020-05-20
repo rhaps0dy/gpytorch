@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.distributions import Distribution
 
-from .constraints import Interval
+from .constraints import Interval, ConstraintViolationError
 from .lazy import LazyTensor
 from .utils.deprecation import DeprecationError
 
@@ -84,7 +84,7 @@ class Module(nn.Module):
             elif torch.is_tensor(val):
                 constraint = self.constraint_for_parameter_name(name)
                 if constraint is not None and constraint.enforced and not constraint.check_raw(val):
-                    raise RuntimeError(
+                    raise ConstraintViolationError(
                         "Attempting to manually set a parameter value that is out of bounds of "
                         f"its current constraints, {constraint}. "
                         "Most likely, you want to do the following:\n likelihood = GaussianLikelihood"
@@ -101,7 +101,7 @@ class Module(nn.Module):
             elif isinstance(val, float):
                 constraint = self.constraint_for_parameter_name(name)
                 if constraint is not None and not constraint.check_raw(val):
-                    raise RuntimeError(
+                    raise ConstraintViolationError(
                         "Attempting to manually set a parameter value that is out of bounds of "
                         f"its current constraints, {constraint}. "
                         "Most likely, you want to do the following:\n likelihood = GaussianLikelihood"

@@ -5,20 +5,23 @@ import numpy.polynomial.hermite
 import torch
 
 from ..distributions import base_distributions
-from ..constraints import LessThan
+from ..constraints import LessThan, ConstraintViolationError
 from ..lazy import BlockInterleavedLazyTensor
 from .softmax_likelihood import SoftmaxLikelihood
 
 
 class RobustmaxLikelihood(SoftmaxLikelihood):
     "Robustmax likelihood for multiclass GP classification."
-    def __init__(self, num_classes, epsilon=1e-3, max_epsilon=1-2**-20,
+    def __init__(self, num_classes, epsilon=1e-3,
+                 log_epsilon_constraint=None,
                  num_quadrature_points=20):
         super().__init__(num_classes=num_classes, mixing_weights=False)
         self.num_quadrature_points = num_quadrature_points
+        if log_epsilon_constraint is None:
+            log_epsilon_constraint = LessThan(- 2**-20)
 
         self.register_parameter("raw_log_epsilon", torch.nn.Parameter(torch.zeros(())))
-        self.register_constraint("raw_log_epsilon", LessThan(max_epsilon))
+        self.register_constraint("raw_log_epsilon", log_epsilon_constraint)
         self.epsilon = epsilon  # Set raw parameter
 
     @property
@@ -39,7 +42,15 @@ class RobustmaxLikelihood(SoftmaxLikelihood):
     def log_epsilon(self, value: torch.Tensor) -> None:
         if not torch.is_tensor(value):
             value = torch.as_tensor(value).to(self.raw_log_epsilon)
-        self.initialize(raw_log_epsilon=self.raw_log_epsilon_constraint.inverse_transform(value))
+        try:
+            self.initialize(raw_log_epsilon=self.raw_log_epsilon_constraint.inverse_transform(value))
+        except ConstraintViolationError:
+            raise ConstraintViolationError(
+                "Attempting to manually set a parameter value that is out of bounds of "
+                f"its current constraints, {self.raw_log_epsilon}. "
+                "Most likely, you want to do the following:\n likelihood = RobustmaxLikelihood"
+                "(log_epsilon_constraint=gpytorch.constraints.LessThan(better_upper_bound))"
+            )
 
     def log_class_probs(self):
         "returns log(epsilon/(num_classes-1)), log(1-epsilon)"
