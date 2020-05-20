@@ -8,6 +8,7 @@ from ..utils.getitem import _noop_index
 from ..utils.memoize import cached
 from .lazy_tensor import LazyTensor
 from .non_lazy_tensor import lazify
+from .. import settings
 
 
 class LazyEvaluatedKernelTensor(LazyTensor):
@@ -227,7 +228,9 @@ class LazyEvaluatedKernelTensor(LazyTensor):
             self.x2, self.x1, kernel=self.kernel, last_dim_is_batch=self.last_dim_is_batch, **self.params
         )
 
-    def add_jitter(self, jitter_val=1e-3):
+    def add_jitter(self, jitter_val=None):
+        if jitter_val is None:
+            jitter_val = settings.diagonal_jitter.value()
         return self.evaluate_kernel().add_jitter(jitter_val)
 
     def _unsqueeze_batch(self, dim):

@@ -519,6 +519,13 @@ class tridiagonal_jitter(_value_context):
 
     _global_value = 1e-6
 
+class diagonal_jitter(_value_context):
+    """
+    The absolute amount of noise to add when calling .add_jitter()
+    """
+    _global_value = 1e-3
+
+
 
 class use_toeplitz(_feature_flag):
     """

@@ -6,6 +6,7 @@ from ._dsmm import DSMM
 from ._log_normal_cdf import LogNormalCDF
 from .matern_covariance import MaternCovariance
 from .rbf_covariance import RBFCovariance
+from .. import settings
 
 
 def add_diag(input, diag):
@@ -26,7 +27,7 @@ def add_diag(input, diag):
     return lazify(input).add_diag(diag)
 
 
-def add_jitter(mat, jitter_val=1e-3):
+def add_jitter(mat, jitter_val=None):
     """
     Adds "jitter" to the diagonal of a matrix.
     This ensures that a matrix that *should* be positive definite *is* positive definate.
@@ -36,6 +37,9 @@ def add_jitter(mat, jitter_val=1e-3):
 
     Returns: (matrix nxn)
     """
+    if jitter_val is None:
+        jitter_val = settings.diagonal_jitter.value()
+
     if hasattr(mat, "add_jitter"):
         return mat.add_jitter(jitter_val)
     else:
