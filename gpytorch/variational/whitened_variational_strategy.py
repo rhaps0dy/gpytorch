@@ -112,6 +112,8 @@ class WhitenedVariationalStrategy(UnwhitenedVariationalStrategy):
             # Cache some values for the KL divergence
             if self.training:
                 mean_diff = (variational_dist.mean - self.prior_distribution.mean).unsqueeze(-1)
+                while mean_diff.dim() > prior_covar.dim():
+                    prior_covar = prior_covar.unsqueeze(0)
                 self._mean_diff_inv_quad_memo, self._logdet_memo = prior_covar.inv_quad_logdet(
                     mean_diff, logdet=True
                 )
@@ -145,6 +147,7 @@ class WhitenedVariationalStrategy(UnwhitenedVariationalStrategy):
             # Do not use preconditioning for whitened VI, as it does not seem to improve performance.
             with settings.max_preconditioner_size(0):
                 with torch.no_grad():
+                    induc_data_covar = induc_data_covar.repeat(mean_diff.size(0), 1, 1)
                     eager_rhs = torch.cat([induc_data_covar, mean_diff], -1)
                     solve, probe_vecs, probe_vec_norms, probe_vec_solves, tmats = CachedCGLazyTensor.precompute_terms(
                         induc_induc_covar,
