@@ -13,7 +13,7 @@ from .softmax_likelihood import SoftmaxLikelihood
 class RobustmaxLikelihood(SoftmaxLikelihood):
     "Robustmax likelihood for multiclass GP classification."
     def __init__(self, num_classes, epsilon=1e-3,
-                 log_epsilon_constraint=None,
+                 epsilon_constraint=None,
                  num_quadrature_points=20):
         super().__init__(num_classes=num_classes, mixing_weights=False)
         self.num_quadrature_points = num_quadrature_points
