@@ -21,7 +21,6 @@ from ..utils.getitem import _compute_getitem_size, _convert_indices_to_tensors, 
 from ..utils.memoize import add_to_cache, cached
 from ..utils.warnings import NumericalWarning
 from .lazy_tensor_representation_tree import LazyTensorRepresentationTree
-from .. import settings
 
 
 class LazyTensor(ABC):
@@ -712,6 +711,8 @@ class LazyTensor(ABC):
         """
         if jitter_val is None:
             jitter_val = settings.diagonal_jitter.value()
+        if jitter_val == 0.0:
+            return self
         diag = torch.tensor(jitter_val, dtype=self.dtype, device=self.device)
         return self.add_diag(diag)
 
